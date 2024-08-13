@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Tệp</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --info-color: #9b59b6;
+            --success-color: #27ae60;
+            --background-color: #f4f4f4;
+            --text-color: #333;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            font-size: 100px;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .file-list {
+            list-style-type: none;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .file-name {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .file-actions .btn {
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .search-container,
+        .sort-container {
+            margin-bottom: 15px;
+        }
+
+        .search-input,
+        .sort-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        .upload-progress {
+            height: 5px;
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .file-actions {
+                margin-top: 10px;
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .file-actions .btn {
+                flex-grow: 1;
+            }
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background-color: #333;
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background-color: var(--success-color);
+        }
+
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Quản lý Tệp</h1>
+
+        <div class="card">
+            <h2>Tải lên Tệp Mới</h2>
+            <form id="uploadForm" class="upload-form">
+                <input type="hidden" id="username" name="username">
+                <div class="file-input-wrapper">
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-file-upload"></i> Chọn tệp
+                    </button>
+                    <input type="file" id="file" name="file" class="file-input" required>
+                </div>
+                <span id="fileName"></span>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-upload"></i> Tải lên
+                </button>
+                <div class="upload-progress">
+                    <div class="upload-progress-bar"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Danh sách Tệp đã Tải lên</h2>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Tìm kiếm tệp...">
+            </div>
+            <div class="sort-container">
+                <select class="sort-select">
+                    <option value="name-asc">Tên (A-Z)</option>
+                    <option value="name-desc">Tên (Z-A)</option>
+                    <option value="date-asc">Cũ nhất trước</option>
+                    <option value="date-desc">Mới nhất trước</option>
+                </select>
+            </div>
+            <ul id="fileList" class="file-list"></ul>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('username').value = username;
+
+            const fileInput = document.getElementById('file');
+            const fileNameSpan = document.getElementById('fileName');
+            fileInput.addEventListener('change', (e) => {
+                fileNameSpan.textContent = e.target.files[0].name;
+            });
+
+            await loadFiles();
+
+            document.getElementById('uploadForm').addEventListener('submit', uploadFile);
+
+            setupSearch();
+            setupSort();
+        });
+
+        async function loadFiles() {
+            const username = document.getElementById('username').value;
+            try {
+                const response = await fetch(`/files?username=${username}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = '';
+                    result.files.forEach(file => {
+                        const listItem = createFileListItem(file);
+                        fileList.appendChild(listItem);
+                    });
+                    document.querySelector('.sort-select').dispatchEvent(new Event('change'));
+                } else {
+                    showToast('Không thể lấy danh sách tệp: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi khi tải danh sách tệp', 'error');
+            }
+        }
+
+        function createFileListItem(file) {
+            const listItem = document.createElement('li');
+            listItem.className = 'file-item fade-in';
+            listItem.dataset.modifiedDate = file.modifiedDate;
+
+            const fileName = document.createElement('span');
+            fileName.className = 'file-name';
+            fileName.textContent = file.filename;
+            listItem.appendChild(fileName);
+
+            const fileInfo = document.createElement('span');
+            fileInfo.className = 'file-info';
+            fileInfo.textContent = new Date(file.modifiedDate).toLocaleString();
+            listItem.appendChild(fileInfo);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'file-actions';
+
+            const downloadButton = createButton('<i class="fas fa-download"></i>', 'btn btn-primary', () => downloadFile(file.filename));
+            const deleteButton = createButton('<i class="fas fa-trash-alt"></i>', 'btn btn-danger', () => deleteFile(file.filename));
+            const shareButton = createButton(file.shared ? '<i class="fas fa-unlink"></i>' : '<i class="fas fa-share-alt"></i>', 'btn btn-warning', () => toggleShareFile(file));
+            const renameButton = createButton('<i class="fas fa-edit"></i>', 'btn btn-info', () => renameFile(listItem, file));
+
+            actionsDiv.append(downloadButton, deleteButton, shareButton, renameButton);
+
+            if (file.shared) {
+                const copyLinkButton = createButton('<i class="fas fa-copy"></i>', 'btn btn-success', () => copyShareLink(file.filename));
+                actionsDiv.appendChild(copyLinkButton);
+            }
+
+            listItem.appendChild(actionsDiv);
+
+            return listItem;
+        }
+
+        function createButton(innerHTML, className, onClick) {
+            const button = document.createElement('button');
+            button.innerHTML = innerHTML;
+            button.className = className;
+            button.onclick = onClick;
+            return button;
+        }
+
+        async function uploadFile(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const progressBar = document.querySelector('.upload-progress-bar');
+            progressBar.style.width = '0%';
+
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+
+                xhr.onload = async function () {
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            showToast('Tải lên thành công!', 'success');
+                            await loadFiles();
+                        } else {
+                            showToast('Tải lên thất bại: ' + result.message, 'error');
+                        }
+                    } else {
+                        showToast('Lỗi khi tải lên tệp', 'error');
+                    }
+                    progressBar.style.width = '0%';
+                };
+
+                xhr.send(formData);
+            } catch (error) {
+                showToast('Lỗi khi tải lên tệp', 'error');
+                progressBar.style.width = '0%';
+            }
+        }
+
+        function downloadFile(filename) {
+            const username = document.getElementById('username').value;
+            window.location.href = `/download/${username}/${filename}`;
+        }
+
+        async function deleteFile(filename) {
+            if (!confirm('Bạn có chắc chắn muốn xóa tệp này?')) return;
+            const username = document.getElementById('username').value;
+            try {
+                const response = await fetch('/delete-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, filename })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Xóa tệp thành công', 'success');
+                    await loadFiles();
+                } else {
+                    showToast('Xóa thất bại: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi khi xóa tệp', 'error');
+            }
+        }
+
+        async function toggleShareFile(file) {
+            const username = document.getElementById('username').value;
+            try {
+                const response = await fetch('/share-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, filename: file.filename })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    file.shared = !file.shared;
+                    await loadFiles();
+                    if (file.shared) {
+                        showToast(`Tệp đã được chia sẻ. Liên kết: ${result.link}`, 'success');
+                    } else {
+                        showToast('Đã hủy chia sẻ tệp', 'success');
+                    }
+                } else {
+                    showToast('Thay đổi trạng thái chia sẻ thất bại: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi khi thay đổi trạng thái chia sẻ', 'error');
+            }
+        }
+
+        async function renameFile(listItem, file) {
+            const newName = prompt('Nhập tên mới cho tệp:', file.filename);
+            if (newName && newName !== file.filename) {
+                const username = document.getElementById('username').value;
+                try {
+                    const response = await fetch('/rename-file', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, oldFilename: file.filename, newFilename: newName })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        file.filename = newName;
+                        listItem.querySelector('.file-name').textContent = newName;
+                        showToast('Đổi tên thành công', 'success');
+                    } else {
+                        showToast('Đổi tên thất bại: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    showToast('Lỗi khi đổi tên tệp', 'error');
+                }
+            }
+        }
+
+        function copyShareLink(filename) {
+            const username = document.getElementById('username').value;
+            const shareLink = `${window.location.origin}/download/${username}/${filename}`;
+            navigator.clipboard.writeText(shareLink).then(() => {
+                showToast('Đã sao chép liên kết chia sẻ vào clipboard!', 'success');
+            }).catch(err => {
+                console.error('Không thể sao chép liên kết: ', err);
+                showToast('Không thể sao chép liên kết. Vui lòng thử lại.', 'error');
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+
+            toastContainer.appendChild(toast);
+
+            // Trigger reflow
+            toast.offsetHeight;
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        function setupSearch() {
+            const searchInput = document.querySelector('.search-input');
+            searchInput.addEventListener('input', () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const fileItems = document.querySelectorAll('.file-item');
+
+                fileItems.forEach(item => {
+                    const fileName = item.querySelector('.file-name').textContent.toLowerCase();
+                    if (fileName.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        function setupSort() {
+            const sortSelect = document.querySelector('.sort-select');
+            sortSelect.addEventListener('change', () => {
+                const sortValue = sortSelect.value;
+                const fileList = document.getElementById('fileList');
+                const fileItems = Array.from(fileList.children);
+
+                fileItems.sort((a, b) => {
+                    const aName = a.querySelector('.file-name').textContent;
+                    const bName = b.querySelector('.file-name').textContent;
+                    const aDate = new Date(a.dataset.modifiedDate);
+                    const bDate = new Date(b.dataset.modifiedDate);
+
+                    switch (sortValue) {
+                        case 'name-asc':
+                            return aName.localeCompare(bName);
+                        case 'name-desc':
+                            return bName.localeCompare(aName);
+                        case 'date-asc':
+                            return aDate - bDate;
+                        case 'date-desc':
+                            return bDate - aDate;
+                        default:
+                            return 0;
+                    }
+                });
+
+                fileItems.forEach(item => fileList.appendChild(item));
+            });
+        }
+    </script>
+</body>
+
+</html>

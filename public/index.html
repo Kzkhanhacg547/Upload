@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #2E3440;
+            color: #D8DEE9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #4C566A;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #88C0D0;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #ECEFF4;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #D8DEE9;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #ECEFF4;
+            color: #2E3440;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #8FBCBB;
+            background-color: #E5E9F0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #5E81AC;
+            border: none;
+            border-radius: 4px;
+            color: #ECEFF4;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #81A1C1;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: #5E81AC;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        p {
+            text-align: center;
+            margin-top: 20px;
+            color: #D8DEE9;
+        }
+
+        a {
+            color: #8FBCBB;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #BF616A;
+        }
+
+        .success {
+            color: #A3BE8C;
+        }
+
+        .tooltip {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: #BF616A;
+            color: #ECEFF4;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .tooltip.show {
+            display: block;
+        }
+
+        .password-strength {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .strength-weak {
+            color: #BF616A;
+        }
+
+        .strength-medium {
+            color: #EBCB8B;
+        }
+
+        .strength-strong {
+            color: #A3BE8C;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Đăng ký</h1>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập:</label>
+                <input type="text" id="username" name="username" required>
+                <div class="tooltip" id="usernameTooltip">Tên đăng nhập đã tồn tại</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu:</label>
+                <input type="password" id="password" name="password" required>
+                <div class="password-strength" id="passwordStrength">Độ mạnh mật khẩu</div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+                <div class="tooltip" id="emailTooltip">Email không hợp lệ</div>
+            </div>
+
+            <button type="submit">Đăng ký <span class="loading" id="loadingSpinner">⏳</span></button>
+        </form>
+        <p>Đã có tài khoản? <a href="login">Đăng nhập</a></p>
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('username').addEventListener('input', (e) => {
+            const tooltip = document.getElementById('usernameTooltip');
+            if (e.target.value.length < 3) {
+                tooltip.textContent = 'Tên đăng nhập quá ngắn';
+                tooltip.classList.add('show');
+            } else {
+                tooltip.classList.remove('show');
+            }
+        });
+
+        document.getElementById('password').addEventListener('input', (e) => {
+            const strengthText = document.getElementById('passwordStrength');
+            const value = e.target.value;
+            let strength = 'strength-weak';
+            if (value.length > 7 && /[A-Z]/.test(value) && /[0-9]/.test(value)) {
+                strength = 'strength-strong';
+                strengthText.textContent = 'Mạnh';
+            } else if (value.length > 5) {
+                strength = 'strength-medium';
+                strengthText.textContent = 'Trung bình';
+            } else {
+                strengthText.textContent = 'Yếu';
+            }
+            strengthText.className = 'password-strength ' + strength;
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const messageDiv = document.getElementById('message');
+
+            loadingSpinner.classList.add('show');
+            messageDiv.textContent = '';
+            messageDiv.classList.remove('success', 'error');
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, email })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    messageDiv.textContent = 'Đăng ký thành công!';
+                    messageDiv.classList.add('success');
+                    setTimeout(() => {
+                        window.location.href = 'login';
+                    }, 2000);
+                } else {
+                    messageDiv.textContent = 'Đăng ký thất bại: ' + result.message;
+                    messageDiv.classList.add('error');
+                }
+            } catch (error) {
+                messageDiv.textContent = 'Đã xảy ra lỗi: ' + error.message;
+                messageDiv.classList.add('error');
+            } finally {
+                loadingSpinner.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+
+</html>
