@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kz AI Image & Media System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #000;
+            color: #0f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: glitch 1s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: skewX(0deg); }
+            20% { transform: skewX(-2deg); }
+            40% { transform: skewX(2deg); }
+            60% { transform: skewX(-2deg); }
+            80% { transform: skewX(2deg); }
+            100% { transform: skewX(0deg); }
+        }
+
+        .upload-area {
+            border: 2px dashed #0f0;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .search-container {
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .result-area {
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+
+        .button {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            margin-right: 5px;
+        }
+
+        .button:hover {
+            background: #0f0;
+            color: #000;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mode-button {
+            padding: 8px 16px;
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-button.active {
+            background: #0f0;
+            color: #000;
+        }
+
+        .youtube-results {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .youtube-item {
+            border: 1px solid #0f0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .youtube-title {
+            color: #0f0;
+            font-size: 16px;
+            margin-bottom: 5px;
+            flex-grow: 1;
+        }
+
+        .youtube-channel {
+            color: #0f0;
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .media-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .media-modal.active {
+            display: flex;
+        }
+
+        .media-container {
+            width: 90%;
+            max-width: 800px;
+            background: #000;
+            border: 1px solid #0f0;
+            padding: 20px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #0f0;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .audio-player {
+            width: 100%;
+            padding: 20px;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+        }
+
+        .audio-info {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .audio-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            border: 1px solid #0f0;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        #coordinates {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 14px;
+        }
+
+        .binary-rain {
+            position: fixed;
+            color: #0f0;
+            font-size: 12px;
+            line-height: 12px;
+            animation: rain linear infinite;
+        }
+
+        @keyframes rain {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #0f0;
+            box-shadow: 0 0 10px #0f0;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .editable-content {
+            width: 100%;
+            min-height: 200px;
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            margin-top: 10px;
+        }
+
+.ai-controls {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.ai-response {
+    border: 1px solid #0f0;
+    padding: 15px;
+    margin-top: 10px;
+    min-height: 50px;
+    background: rgba(0, 255, 0, 0.05);
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HỆ THỐNG QUÉT ẢNH & MEDIA AI v3.0</h1>
+            <p>// HỆ THỐNG PHÂN TÍCH NÂNG CAO VỚI TRÍ TUỆ NHÂN TẠO //</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>KÉO THẢ HOẶC NHẤP ĐỂ TẢI ẢNH LÊN</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <div class="mode-buttons">
+            <button class="mode-button active" data-mode="text">VĂN BẢN</button>
+            <button class="mode-button" data-mode="video">VIDEO</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="NHẬP TỪ KHÓA TÌM KIẾM...">
+        </div>
+
+        <div class="image-preview" id="imagePreview"></div>
+        <div class="result-area" id="resultArea">
+            <p>ĐANG CHỜ DỮ LIỆU...</p>
+        </div>
+
+        <div id="youtubeResults" class="youtube-results"></div>
+      <div class="ai-controls">
+    <input type="text" id="aiPrompt" placeholder="ĐẶT CÂU HỎI CHO AI...">
+    <button class="button" onclick="askAI()">HỎI AI</button>
+</div>
+<div id="aiResponse" class="ai-response"></div>
+    </div>
+
+    <div class="media-modal" id="mediaModal">
+        <div class="media-container">
+            <button class="close-modal" onclick="closeMediaModal()">&times;</button>
+            <div id="mediaContent"></div>
+        </div>
+    </div>
+
+    <div id="coordinates"></div>
+    <div class="status" id="status">TRẠNG THÁI: HỆ THỐNG ĐANG CHỜ</div>
+
+    <script>
+        const GEMINI_API_KEY = "AIzaSyCkG7NfjnfBQ4ovfLW7uAFl6V8WDmgt7dg";
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+
+async function askAI() {
+    const prompt = document.getElementById('aiPrompt').value;
+    const textContent = document.getElementById('editableText')?.value || '';
+    
+    if (!prompt) {
+        alert('Vui lòng nhập câu hỏi cho AI');
+        return;
+    }
+
+    const fullPrompt = `Dựa trên văn bản sau:\n${textContent}\n\nCâu hỏi: ${prompt}`;
+    
+    try {
+        status.innerHTML = 'TRẠNG THÁI: ĐANG XỬ LÝ YÊU CẦU AI...';
+        
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [{
+                        text: fullPrompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 2048
+                }
+            })
+        });
+
+        const data = await response.json();
+        let aiResponse = "AI không có phản hồi.";
+        
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+            aiResponse = data.candidates[0].content.parts[0].text;
+        }
+
+        document.getElementById('aiResponse').innerHTML = `<p><strong>AI:</strong> ${aiResponse}</p>`;
+        status.innerHTML = 'TRẠNG THÁI: HOÀN TẤT XỬ LÝ AI';
+    } catch (error) {
+        console.error('Lỗi khi gọi API:', error);
+        document.getElementById('aiResponse').innerHTML = 'Có lỗi xảy ra khi xử lý yêu cầu AI';
+        status.innerHTML = 'TRẠNG THÁI: LỖI XỬ LÝ AI';
+    }
+}
+        
+        const YOUTUBE_API_KEY = "AIzaSyBVCcGw9cYbRPJGJxI7lnN4OBjerSlutGQ";
+        let currentMode = 'text';
+
+         
+        document.querySelectorAll('.mode-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentMode = button.dataset.mode;
+                updateSearchPlaceholder();
+            });
+        });
+
+        function updateSearchPlaceholder() {
+            const searchInput = document.getElementById('searchInput');
+            switch(currentMode) {
+                case 'video':
+                    searchInput.placeholder = 'TÌM KIẾM VIDEO YOUTUBE...';
+                    break;
+                case 'audio':
+                    searchInput.placeholder = 'TÌM KIẾM NHẠC YOUTUBE...';
+                    break;
+                default:
+                    searchInput.placeholder = 'TÌM KIẾM TRONG VĂN BẢN...';
+            }
+        }
+
+        async function searchYouTube(query) {
+            try {
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=${query}&key=${YOUTUBE_API_KEY}`);
+                const data = await response.json();
+                displayYouTubeResults(data.items);
+            } catch (error) {
+                console.error('YouTube search error:', error);
+                status.innerHTML = 'TRẠNG THÁI: LỖI TÌM KIẾM YOUTUBE';
+            }
+        }
+
+        function displayYouTubeResults(items) {
+            const resultsDiv = document.getElementById('youtubeResults');
+            resultsDiv.innerHTML = '';
+
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'youtube-item';
+                itemDiv.innerHTML = `
+                    <div class="youtube-title">${item.snippet.title}</div>
+                    <div class="youtube-channel">${item.snippet.channelTitle}</div>
+                    <button class="button" onclick="handleMedia('${item.id.videoId}', '${currentMode}')">
+                        ${currentMode === 'video' ? 'XEM VIDEO' : 'NGHE NHẠC'}
+                    </button>
+                `;
+                resultsDiv.appendChild(itemDiv);
+            });
+        }
+
+        function handleMedia(videoId, mode) {
+            const mediaModal = document.getElementById('mediaModal');
+            const mediaContent = document.getElementById('mediaContent');
+            
+            if (mode === 'video') {
+                mediaContent.innerHTML = `
+                    <iframe 
+                        width="100%" 
+                        height="450" 
+                        src="https://www.youtube.com/embed/${videoId}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen
+                    ></iframe>
+                `;
+            } else {
+                 
+                mediaContent.innerHTML = `
+                    <div class="audio-player">
+                        <div class="audio-info">
+                            <h3>ĐANG PHÁT NHẠC</h3>
+                        </div>
+                        <audio controls style="width: 100%">
+                            <source src="https://www.youtube.com/embed/${videoId}" type="audio/mpeg">
+                            Trình duyệt không hỗ trợ audio player.
+                        </audio>
+                    </div>
+                `;
+            }
+            
+            mediaModal.classList.add('active');
+        }
+
+        function closeMediaModal() {
+            const mediaModal = document.getElementById('mediaModal');
+            const mediaContent = document.getElementById('mediaContent');
+            mediaModal.classList.remove('active');
+            mediaContent.innerHTML = '';
+        }
+
+      
+        document.getElementById('searchInput').addEventListener('input', async (e) => {
+            const query = e.target.value;
+
+            if (currentMode === 'text') {
+                const textarea = document.getElementById('editableText');
+                if (textarea) {
+                    searchInText(textarea.value);
+                }
+            } else {
+                if (query.length >= 3) {
+                    status.innerHTML = 'TRẠNG THÁI: ĐANG TÌM KIẾM YOUTUBE...';
+                    await searchYouTube(query);
+                }
+            }
+        });
+
+        
+        function createBinaryRain() {
+            const rain = document.createElement('div');
+            rain.className = 'binary-rain';
+            rain.style.left = Math.random() * window.innerWidth + 'px';
+            rain.style.animationDuration = Math.random() * 2 + 1 + 's';
+            rain.innerText = Math.random() > 0.5 ? '1' : '0';
+            document.body.appendChild(rain);
+
+            setTimeout(() => {
+                rain.remove();
+            }, 3000);
+        }
+
+        setInterval(createBinaryRain, 100);
+
+        
+        document.addEventListener('mousemove', (e) => {
+            const coords = document.getElementById('coordinates');
+            coords.innerHTML = `X: ${e.clientX} | Y: ${e.clientY}`;
+        });
+
+      
+const statusMessages = [
+    'ĐANG QUÉT MẠNG...',
+    'ĐANG PHÂN TÍCH MẪU...',
+    'ĐANG PHÁT HIỆN BẤT THƯỜNG...',
+    'ĐANG XỬ LÝ DỮ LIỆU...',
+    'HỆ THỐNG ĐANG HOẠT ĐỘNG',
+    'ĐANG KHỞI TẠO AI...',
+    'ĐANG PHÂN TÍCH DỮ LIỆU AI...',
+    'AI ĐANG XỬ LÝ...'
+];
+
+setInterval(() => {
+    if (status.innerHTML.includes('TRẠNG THÁI: HỆ THỐNG ĐANG CHỜ')) {
+        status.innerHTML = 'TRẠNG THÁI: ' + statusMessages[Math.floor(Math.random() * statusMessages.length)];
+    }
+}, 3000);
+
+ 
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const imagePreview = document.getElementById('imagePreview');
+const resultArea = document.getElementById('resultArea');
+const searchInput = document.getElementById('searchInput');
+const status = document.getElementById('status');
+
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = 'rgba(0, 255, 0, 0.2)';
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.background = 'none';
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = 'none';
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+});
+
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleFile(file);
+});
+
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Vui lòng tải lên tệp ảnh.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        imagePreview.innerHTML = `
+            <img src="${e.target.result}" style="max-width: 100%;">
+            <div class="scan-line"></div>
+        `;
+        status.innerHTML = 'TRẠNG THÁI: ĐÃ TẢI ẢNH';
+        analyzeImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+async function analyzeImage(imageUrl) {
+    status.innerHTML = 'TRẠNG THÁI: ĐANG PHÂN TÍCH ẢNH...';
+    resultArea.innerHTML = '<div class="loading">ĐANG XỬ LÝ...</div>';
+
+    try {
+        const result = await Tesseract.recognize(imageUrl, 'vie+eng');
+        const editableContent = `
+            <p>VĂN BẢN PHÁT HIỆN ĐƯỢC:</p>
+            <textarea class="editable-content" id="editableText">${result.data.text}</textarea>
+            <div style="margin-top: 10px;">
+                <button class="button" onclick="copyText()">SAO CHÉP VĂN BẢN</button>
+                <button class="button" onclick="saveText()">LƯU THAY ĐỔI</button>
+                <button class="button" onclick="analyzeWithAI()">PHÂN TÍCH VỚI AI</button>
+            </div>
+        `;
+        resultArea.innerHTML = editableContent;
+        status.innerHTML = 'TRẠNG THÁI: HOÀN TẤT PHÂN TÍCH';
+
+        if (searchInput.value) {
+            searchInText(result.data.text);
+        }
+    } catch (error) {
+        resultArea.innerHTML = 'LỖI: PHÂN TÍCH THẤT BẠI';
+        status.innerHTML = 'TRẠNG THÁI: LỖI';
+    }
+}
+
+async function analyzeWithAI() {
+    const text = document.getElementById('editableText').value;
+    if (!text) {
+        alert('Không có văn bản để phân tích');
+        return;
+    }
+
+    const prompt = "Hãy phân tích nội dung văn bản sau và cung cấp tóm tắt ngắn gọn: " + text;
+    document.getElementById('aiPrompt').value = prompt;
+    await askAI();
+}
+
+function copyText() {
+    const textarea = document.getElementById('editableText');
+    textarea.select();
+    document.execCommand('copy');
+    status.innerHTML = 'TRẠNG THÁI: ĐÃ SAO CHÉP VĂN BẢN';
+    setTimeout(() => {
+        status.innerHTML = 'TRẠNG THÁI: HỆ THỐNG ĐANG CHỜ';
+    }, 2000);
+}
+
+function saveText() {
+    const textarea = document.getElementById('editableText');
+    const text = textarea.value;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ocr_result.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    status.innerHTML = 'TRẠNG THÁI: ĐÃ LƯU VĂN BẢN';
+    setTimeout(() => {
+        status.innerHTML = 'TRẠNG THÁI: HỆ THỐNG ĐANG CHỜ';
+    }, 2000);
+}
+
+function searchInText(text) {
+    const query = searchInput.value.toLowerCase();
+    const textLower = text.toLowerCase();
+
+    if (query && textLower.includes(query)) {
+        const matches = text.match(new RegExp(query, 'gi'));
+        const textarea = document.getElementById('editableText');
+        textarea.value = textarea.value.replace(new RegExp(query, 'gi'), match => `[${match}]`);
+        status.innerHTML = `TRẠNG THÁI: TÌM THẤY ${matches.length} KẾT QUẢ`;
+    } else {
+        status.innerHTML = 'TRẠNG THÁI: KHÔNG TÌM THẤY KẾT QUẢ';
+    }
+}
+    </script>
+</body>
+</html>
