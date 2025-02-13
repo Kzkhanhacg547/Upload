@@ -49,6 +49,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/image/scanning', (req, res) => {
+    res.sendFile(path.join(__dirname, 'ai_image_scanning_media_system.html'));
+}); 
+
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
